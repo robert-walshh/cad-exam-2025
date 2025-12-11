@@ -88,6 +88,16 @@ export class AuctionStack extends cdk.Stack {
       },
     });
 
+    const addMetadataFn = new lambdanode.NodejsFunction(this, "addMetadataFn", {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      entry: `${__dirname}/../lambdas/addStockMetadata.ts`,
+      timeout: cdk.Duration.seconds(15),
+      memorySize: 128,
+      environment: {
+        TABLE_NAME: auctioStock.tableName,
+      },
+    });
+
     // Subscriptions
 
     topic.addSubscription(
@@ -103,11 +113,25 @@ export class AuctionStack extends cdk.Stack {
       })
     );
 
+    topic.addSubscription(
+      new subs.LambdaSubscription(addMetadataFn, {
+        filterPolicy: {
+          metadata_type: sns.SubscriptionFilter.stringFilter({
+            allowlist: ["Public", "Private", "Online"],
+          }),
+        },
+      })
+    );
+
     // Permissions
 
     auctioStock.grantReadWriteData(lambdaA);
-    
+
     // Output
+
+    new cdk.CfnOutput(this, "SNS Topic ARN", {
+      value: topic.topicArn,
+    });
 
     new cdk.CfnOutput(this, "SNS Topic ARN", {
       value: topic.topicArn,
