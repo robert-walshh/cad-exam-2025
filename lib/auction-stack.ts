@@ -108,7 +108,7 @@ export class AuctionStack extends cdk.Stack {
     );
 
     topic.addSubscription(
-      new subs.LambdaSubscription(addMetadataFn, {
+      new subs.LambdaSubscription(lambdaA, {
         filterPolicyWithMessageBody: {
           Records: sns.FilterOrPolicy.policy({
             s3: sns.FilterOrPolicy.policy({
