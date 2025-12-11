@@ -100,12 +100,6 @@ export class AuctionStack extends cdk.Stack {
 
     // Subscriptions
 
-    topic.addSubscription(
-      new subs.SqsSubscription(queue, {
-        rawMessageDelivery: true,
-      })
-    );
-
     lambdaA.addEventSource(
       new events.SqsEventSource(queue, {
         batchSize: 5,
@@ -115,9 +109,17 @@ export class AuctionStack extends cdk.Stack {
 
     topic.addSubscription(
       new subs.LambdaSubscription(addMetadataFn, {
-        filterPolicy: {
-          metadata_type: sns.SubscriptionFilter.stringFilter({
-            allowlist: ["Public", "Private", "Online"],
+        filterPolicyWithMessageBody: {
+          Records: sns.FilterOrPolicy.policy({
+            s3: sns.FilterOrPolicy.policy({
+              object: sns.FilterOrPolicy.policy({
+                key: sns.FilterOrPolicy.filter(
+                  sns.SubscriptionFilter.stringFilter({
+                    allowlist: ["Public", "Private", "Online"],
+                  })
+                ),
+              }),
+            }),
           }),
         },
       })
@@ -128,10 +130,6 @@ export class AuctionStack extends cdk.Stack {
     auctioStock.grantReadWriteData(lambdaA);
 
     // Output
-
-    new cdk.CfnOutput(this, "SNS Topic ARN", {
-      value: topic.topicArn,
-    });
 
     new cdk.CfnOutput(this, "SNS Topic ARN", {
       value: topic.topicArn,
